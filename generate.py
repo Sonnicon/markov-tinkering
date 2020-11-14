@@ -3,9 +3,9 @@ import random
 from pathlib import Path
 
 
-def get_data_from_path(input_file_path):
+def get_data_from_path(input_file_path=Path("data.json")):
     if not input_file_path.is_file():
-        print("Use create.py to generate a json first")
+        print("Data file not found")
         return
     f = input_file_path.open("r")
     result = json.load(f)
@@ -13,15 +13,11 @@ def get_data_from_path(input_file_path):
     return result
 
 
-def total_map(input_map):
-    total = 0
-    for value in input_map.values():
-        total += value
-    return total
+def map_weighted_random(input_map, total=-1):
+    if total == -1:
+        total = sum(input_map.values())
 
-
-def map_weighted_random(input_map):
-    index = random.randint(1, total_map(input_map))
+    index = random.randint(1, total)
     for key, value in input_map.items():
         index -= value
         if index <= 0:
@@ -37,17 +33,19 @@ def generate(word_map, context_map):
         if not len(word) == 0:
             contextual.update(context_map[word])
             contexed = current.copy()
-            start_total = total_map(contexed)
+            start_total = sum(contexed.values())
 
             context_factor = start_total / len(contextual) / max(contextual.values())
             for key in contexed.keys():
                 if not key == "@end":
                     contexed[key] += int((contextual[key]) * context_factor)
 
+            total = sum(contexed.values())
+
             # Size multiplier
             if "@end" in contexed:
-                contexed["@end"] *= int(total_map(contexed) / start_total)
-            print(context_factor)
+                contexed["@end"] *= int(total / start_total)
+
             word = map_weighted_random(contexed)
         else:
             word = map_weighted_random(current)
@@ -58,6 +56,6 @@ def generate(word_map, context_map):
 
 
 if __name__ == '__main__':
-    m = get_data_from_path(Path("data.json"))
+    m = get_data_from_path()
     if m:
         print(generate(m["word_map"], m["context_map"]))
